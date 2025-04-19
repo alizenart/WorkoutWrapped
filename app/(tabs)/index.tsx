@@ -1,74 +1,111 @@
-import { Image, StyleSheet, Platform } from 'react-native';
-
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
+import React, { useState } from 'react';
+import { View, Text, Pressable, Platform, StyleSheet } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Animatable from 'react-native-animatable';
 import { ThemedView } from '@/components/ThemedView';
 
 export default function HomeScreen() {
+  const [fileName, setFileName] = useState<string | null>(null);
+
+  const handlePickFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: 'text/csv',
+    });
+
+    if (!result.canceled) {
+      setFileName("hi"); //change later
+      // Add parsing logic here
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ThemedView style={styles.container}>
+      <Animatable.Text
+        animation="fadeInDown"
+        duration={1200}
+        style={styles.title}
+      >
+        🏋️ Workout Wrapped
+      </Animatable.Text>
+
+      <Animatable.Text
+        animation="fadeIn"
+        delay={600}
+        duration={1000}
+        style={styles.subtitle}
+      >
+        Drop your workout CSV and get the stats!
+      </Animatable.Text>
+
+      <Animatable.View
+        animation="bounceIn"
+        delay={1200}
+        style={styles.uploadContainer}
+      >
+        <Pressable
+          style={({ pressed }) => [
+            styles.uploadBox,
+            pressed && { transform: [{ scale: 0.98 }] },
+          ]}
+          onPress={handlePickFile}
+        >
+          <Text style={styles.uploadText}>
+            {fileName ? `📂 ${fileName}` : 'Click to Upload CSV'}
+          </Text>
+        </Pressable>
+      </Animatable.View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: '#0D0D0D',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    padding: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#39FF14',
+    textShadowColor: '#39FF14',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 1,
+    marginBottom: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  subtitle: {
+    fontSize: 16,
+    color: '#AAAAAA',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  uploadContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  uploadBox: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#39FF14',
+    borderWidth: 2,
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#39FF14',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  uploadText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    textShadowColor: '#39FF14',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
   },
 });
