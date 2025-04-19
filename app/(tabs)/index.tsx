@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { View, Text, Pressable, Platform, StyleSheet } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Animatable from 'react-native-animatable';
@@ -7,14 +8,13 @@ import { ThemedView } from '@/components/ThemedView';
 export default function HomeScreen() {
   const [fileName, setFileName] = useState<string | null>(null);
 
-  const handlePickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: 'text/csv',
-    });
+  const router = useRouter();
 
+  const handlePickFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: 'text/csv' });
     if (!result.canceled) {
-      setFileName("hi"); //change later
-      // Add parsing logic here
+      // push to /summary, passing the file URI
+      router.push({ pathname: '/summary', params: { uri: result.assets[0].uri } });
     }
   };
 
