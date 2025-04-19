@@ -1,7 +1,7 @@
-// SummaryStoryScreen.tsx
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
+  Text,
   TouchableOpacity,
   Dimensions,
   Platform,
@@ -10,9 +10,13 @@ import {
 import Carousel from "react-native-reanimated-carousel";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StorySlide } from "@/components/StorySlide";
+import { ShareCard } from "@/components/ShareCard";
 import * as FileSystem from "expo-file-system";
 import summarizeCSV, { Summary } from "@/components/summarizeCSV";
 import { Ionicons } from "@expo/vector-icons";
+import ViewShot from "react-native-view-shot";
+import * as MediaLibrary from "expo-media-library";
+import * as Sharing from "expo-sharing";
 
 const { width, height } = Dimensions.get("window");
 
@@ -21,6 +25,7 @@ export default function SummaryStoryScreen() {
   const [slides, setSlides] = useState<JSX.Element[]>([]);
   const router = useRouter();
   const carouselRef = useRef<any>(null);
+  const viewShotRef = useRef<any>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -37,15 +42,12 @@ export default function SummaryStoryScreen() {
       const summary: Summary = summarizeCSV(csv);
 
       const slideData = [
-        // 1. Opening Hook
         <StorySlide
           key="intro"
           title="You crushed it in 2025 💪"
           value={`${summary.totalWorkoutDays} days`}
           subtext={`That’s ${summary.totalMinutes} minutes of dedication.\nConsistency is 🔑`}
         />,
-
-        // 2. Volume Block
         <StorySlide
           key="volume"
           title="You moved some serious weight… 🏋️"
@@ -55,8 +57,6 @@ export default function SummaryStoryScreen() {
             summary.maxSetVolume
           } lbs. Beast mode. 💥`}
         />,
-
-        // 3. Effort & Intensity Block
         <StorySlide
           key="effort"
           title="How hard did you go? 🧠🔥"
@@ -68,20 +68,16 @@ export default function SummaryStoryScreen() {
             summary.totalExercises
           } total exercises.\nYou didn’t just lift — you pushed limits.`}
         />,
-
-        // 4. Most Used Block
         <StorySlide
           key="top-exercises"
           title="Your favorite grind 💥"
-          subtext={`Your most frequent exercise was **${
+          subtext={`Your most frequent exercise was ${
             summary.mostFrequentExercise
-          }**.\nTop performers:\n${summary.topExercises
+          }.\nTop performers:\n${summary.topExercises
             .slice(0, 3)
             .map((ex, i) => `• ${ex.exercise} (${ex.volume.toFixed(0)} lbs)`)
             .join("\n")}`}
         />,
-
-        // 5. Time Commitment
         <StorySlide
           key="time"
           title="Time well spent ⏱️"
@@ -91,8 +87,6 @@ export default function SummaryStoryScreen() {
             summary.longestStreak
           } days in a row 💪\nYou made your time count.`}
         />,
-
-        // 6. Distance (if applicable)
         ...(summary.totalDistance > 0
           ? [
               <StorySlide
@@ -104,13 +98,59 @@ export default function SummaryStoryScreen() {
               />,
             ]
           : []),
-
-        // 7. Outro
         <StorySlide
           key="badge"
           title="You’ve earned the badge of a beast 🏅"
-          subtext="Show it off. Brag a little. You earned every drop of sweat.\nWant to see more graphs or share your story?"
-          showShare
+          richSubtext={
+            <>
+              <Text style={styles.subtextContainer}>
+                Share it. Save it. Show it off.
+              </Text>
+              <ViewShot
+                ref={viewShotRef}
+                options={{ format: "png", quality: 1.0 }}
+              >
+                <ShareCard summary={summary} />
+              </ViewShot>
+              <TouchableOpacity
+                style={styles.shareButton}
+                onPress={async () => {
+                  const base64 = await viewShotRef.current?.capture({
+                    format: "png",
+                    result: "data-uri",
+                  });
+
+                  if (!base64) return;
+
+                  if (Platform.OS === "web") {
+                    const dataUrl = `data:image/png;base64,${base64}`;
+                    const link = document.createElement("a");
+                    link.setAttribute("href", dataUrl);
+                    link.setAttribute("download", "workout-summary.png");
+                    link.setAttribute("target", "_blank");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  } else {
+                    const { status } =
+                      await MediaLibrary.requestPermissionsAsync();
+                    if (status === "granted") {
+                      const fileUri = FileSystem.cacheDirectory + "summary.png";
+                      await FileSystem.writeAsStringAsync(fileUri, base64, {
+                        encoding: FileSystem.EncodingType.Base64,
+                      });
+                      const asset = await MediaLibrary.createAssetAsync(
+                        fileUri
+                      );
+                      await Sharing.shareAsync(asset.uri);
+                    }
+                  }
+                }}
+              >
+                <Text style={styles.shareButtonText}>📸 Share This</Text>
+              </TouchableOpacity>
+            </>
+          }
         />,
       ];
 
@@ -121,21 +161,6 @@ export default function SummaryStoryScreen() {
   }, [uri]);
 
   if (!slides.length) return null;
-
-  const styles = StyleSheet.create({
-    arrowLeft: {
-      position: "absolute",
-      left: 20,
-      top: height / 2 - 24,
-      zIndex: 1,
-    },
-    arrowRight: {
-      position: "absolute",
-      right: 20,
-      top: height / 2 - 24,
-      zIndex: 1,
-    },
-  });
 
   return (
     <View style={{ flex: 1 }}>
@@ -164,3 +189,38 @@ export default function SummaryStoryScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  arrowLeft: {
+    position: "absolute",
+    left: 20,
+    top: height / 2 - 24,
+    zIndex: 1,
+  },
+  arrowRight: {
+    position: "absolute",
+    right: 20,
+    top: height / 2 - 24,
+    zIndex: 1,
+  },
+  subtextContainer: {
+    fontSize: 18,
+    color: "#AAA",
+    textAlign: "center",
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  shareButton: {
+    backgroundColor: "#00FFFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 20,
+    alignSelf: "center",
+  },
+  shareButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#000",
+  },
+});

@@ -1,4 +1,3 @@
-// components/StorySlide.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import * as Animatable from 'react-native-animatable';
@@ -9,11 +8,18 @@ interface StorySlideProps {
   title: string;
   value?: string;
   subtext?: string;
+  richSubtext?: React.ReactNode; // ✅ new
   children?: React.ReactNode;
-  showShare?: boolean
+  showShare?: boolean;
 }
 
-export const StorySlide = ({ title, value, subtext, children }: StorySlideProps) => (
+export const StorySlide = ({
+  title,
+  value,
+  subtext,
+  richSubtext,
+  children,
+}: StorySlideProps) => (
   <View style={styles.container}>
     <Animatable.Text animation="fadeInDown" delay={300} style={styles.title}>
       {title}
@@ -25,11 +31,15 @@ export const StorySlide = ({ title, value, subtext, children }: StorySlideProps)
       </Animatable.Text>
     )}
 
-    {subtext && (
+    {richSubtext ? (
+      <Animatable.View animation="fadeInUp" delay={1600}>
+        {richSubtext}
+      </Animatable.View>
+    ) : subtext ? (
       <Animatable.Text animation="fadeInUp" delay={1600} style={styles.subtext}>
         {subtext}
       </Animatable.Text>
-    )}
+    ) : null}
 
     {children}
   </View>

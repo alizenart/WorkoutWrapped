@@ -1,7 +1,6 @@
 // components/ChartSlide.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { BarChart } from 'react-native-svg-charts';
 import * as Animatable from 'react-native-animatable';
 
 const { width, height } = Dimensions.get('window');
