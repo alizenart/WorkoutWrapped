@@ -1,18 +1,22 @@
 // SummaryStoryScreen.tsx
-import React, { useEffect, useState } from 'react';
-import { Dimensions, Platform } from 'react-native';
+import React, { useEffect, useState, useRef} from 'react';
+import {  View, TouchableOpacity, Dimensions, Platform, StyleSheet } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StorySlide } from '@/components/StorySlide';
 import * as FileSystem from 'expo-file-system';
 import summarizeCSV, { Summary } from '@/components/summarizeCSV';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
+
 
 export default function SummaryStoryScreen() {
   const { uri } = useLocalSearchParams<{ uri: string }>();
   const [slides, setSlides] = useState<JSX.Element[]>([]);
   const router = useRouter();
+  const carouselRef = useRef<any>(null); 
+
 
   useEffect(() => {
     async function loadData() {
@@ -89,15 +93,39 @@ export default function SummaryStoryScreen() {
 
   if (!slides.length) return null;
 
+  const styles = StyleSheet.create({
+    arrowLeft: {
+      position: 'absolute',
+      left: 20,
+      top: height / 2 - 24,
+      zIndex: 1,
+    },
+    arrowRight: {
+      position: 'absolute',
+      right: 20,
+      top: height / 2 - 24,
+      zIndex: 1,
+    },
+  });
+
   return (
-    <Carousel
-      width={width}
-      height={height}
-      data={slides}
-      scrollAnimationDuration={800}
-      mode="vertical-stack"
-      modeConfig={{ snapDirection: 'left' }}
-      renderItem={({ item }) => item}
-    />
+    <View style={{ flex: 1 }}>
+      <Carousel
+        ref={carouselRef}
+        width={width}
+        height={height}
+        data={slides}
+        scrollAnimationDuration={800}
+        mode="vertical-stack"
+        modeConfig={{ snapDirection: 'left' }}
+        renderItem={({ item }) => item}
+      />
+      <TouchableOpacity style={styles.arrowLeft} onPress={() => carouselRef.current?.prev()}>
+        <Ionicons name="arrow-back-circle" size={48} color="#00FFFF" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.arrowRight} onPress={() => carouselRef.current?.next()}>
+        <Ionicons name="arrow-forward-circle" size={48} color="#00FFFF" />
+      </TouchableOpacity>
+    </View>
   );
 }
