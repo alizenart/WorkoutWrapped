@@ -6,6 +6,9 @@ import {
   Dimensions,
   Platform,
   StyleSheet,
+  useWindowDimensions,
+  NativeSyntheticEvent,
+  LayoutChangeEvent,
 } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -17,14 +20,85 @@ import { Ionicons } from "@expo/vector-icons";
 import ViewShot from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
 import * as Sharing from "expo-sharing";
+import { BarChart } from "react-native-chart-kit";
 
 const { width, height } = Dimensions.get("window");
 
+interface TopExercisesChartProps {
+  data: ExerciseVolume[];
+}
 type LeaderboardEntry = {
   name: string;
   totalWeight: number;
   timestamp: number;
 };
+
+type ExerciseVolume = {
+  exercise: string;
+  volume: number;
+};
+
+interface TopExercisesChartProps {
+  data: ExerciseVolume[];
+}
+
+export function TopExercisesChart({ data }: TopExercisesChartProps) {
+  const [chartWidth, setChartWidth] = useState(320); // fallback width
+  
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const { width } = event.nativeEvent.layout;
+    setChartWidth(width - 32); // respect padding
+  };
+
+  const formattedData = {
+    labels: data.map((e) =>
+      e.exercise
+    ),
+    datasets: [
+      {
+        data: data.map((e) => e.volume),
+      },
+    ],
+  };
+
+  return (
+    <View onLayout={handleLayout} style={styles.chartContainer}>
+      <Text style={styles.chartTitle}>Volume Moved by Top Exercises</Text>
+      <BarChart
+        data={formattedData}
+        width={chartWidth}
+        height={380}
+        yAxisLabel=""
+        yAxisSuffix=" lbs"
+        fromZero
+        showValuesOnTopOfBars
+        withInnerLines={false}
+        verticalLabelRotation={45}
+        chartConfig={{
+          backgroundGradientFrom: "#121212",
+          backgroundGradientTo: "#121212",
+          decimalPlaces: 0,
+          color: () => `rgba(0, 255, 255, 0.8)`,
+          labelColor: () => "#E0E0E0",
+          propsForLabels: {
+            fontSize: 10,
+            fontWeight: "500",
+          },
+          propsForBackgroundLines: {
+            stroke: "#333",
+          },
+          barRadius: 6,
+        }}
+        style={{
+          marginBottom: 32,
+          borderRadius: 12,
+          alignSelf: "center",
+        }}
+      />
+    </View>
+  );
+}
+
 
 export default function SummaryStoryScreen() {
   const isWeb = Platform.OS === "web";
@@ -119,6 +193,7 @@ export default function SummaryStoryScreen() {
             .slice(0, 3)
             .map((ex, i) => `• ${ex.exercise} (${ex.volume.toFixed(0)} lbs)`)
             .join("\n")}`}
+          richSubtext={<TopExercisesChart data={summary.topExercises.slice(0, 5)} />}
         />,
         <StorySlide
           key="time"
@@ -252,4 +327,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000",
   },
+  chartContainer: {
+    marginTop: 24,
+    paddingHorizontal: 16,
+  },
+  chartTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#888",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  
 });
+
+  
