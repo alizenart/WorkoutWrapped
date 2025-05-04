@@ -108,42 +108,29 @@ export default function SummaryStoryScreen() {
               </Text>
               <ViewShot
                 ref={viewShotRef}
-                options={{ format: "png", quality: 1.0 }}
+                options={{ format: 'jpg', quality: 0.9 }}
               >
                 <ShareCard summary={summary} />
               </ViewShot>
+
               <TouchableOpacity
                 style={styles.shareButton}
                 onPress={async () => {
-                  const base64 = await viewShotRef.current?.capture({
-                    format: "png",
-                    result: "data-uri",
+                  const uri = await viewShotRef.current?.capture({
+                    format: 'jpg',
+                    result: 'data-uri',
                   });
 
-                  if (!base64) return;
+                  if (!uri) return;
 
-                  if (Platform.OS === "web") {
-                    const dataUrl = `data:image/png;base64,${base64}`;
-                    const link = document.createElement("a");
-                    link.setAttribute("href", dataUrl);
-                    link.setAttribute("download", "workout-summary.png");
-                    link.setAttribute("target", "_blank");
+                  if (Platform.OS === 'web') {
+                    const link = document.createElement('a');
+                    link.href = uri;
+                    link.download = 'workout-summary.jpg';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                   } else {
-                    const { status } =
-                      await MediaLibrary.requestPermissionsAsync();
-                    if (status === "granted") {
-                      const fileUri = FileSystem.cacheDirectory + "summary.png";
-                      await FileSystem.writeAsStringAsync(fileUri, base64, {
-                        encoding: FileSystem.EncodingType.Base64,
-                      });
-                      const asset = await MediaLibrary.createAssetAsync(
-                        fileUri
-                      );
-                      await Sharing.shareAsync(asset.uri);
-                    }
                   }
                 }}
               >
