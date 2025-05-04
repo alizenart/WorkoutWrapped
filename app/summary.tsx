@@ -21,25 +21,57 @@ import * as Sharing from "expo-sharing";
 const { width, height } = Dimensions.get("window");
 
 export default function SummaryStoryScreen() {
-  const { uri } = useLocalSearchParams<{ uri: string }>();
+  const isWeb = Platform.OS === "web";
+  const [csv, setCsv] = useState<string | null>(null);
+  const { filename } = useLocalSearchParams<{ filename: string }>();
+
+
   const [slides, setSlides] = useState<JSX.Element[]>([]);
   const router = useRouter();
   const carouselRef = useRef<any>(null);
   const viewShotRef = useRef<any>(null);
 
+  console.log("in summary")
+
   useEffect(() => {
     async function loadData() {
-      if (!uri) {
+      let csvData: string | null = null;
+  
+      if (isWeb) {
+        if (!filename) {
+          router.back();
+          return;
+        }
+        csvData = localStorage.getItem(`csvData:${filename}`);
+        console.log(`Loaded csvData:${filename}`);
+      }
+      else {
+        const { uri } = useLocalSearchParams<{ uri: string }>();
+        if (!uri) {
+          router.back();
+          return;
+        }
+        csvData = await FileSystem.readAsStringAsync(uri);
+      }
+  
+      if (!csvData) {
         router.back();
         return;
       }
+  
+      const summary: Summary = summarizeCSV(csvData);
+      console.log("started summarize");
 
-      const csv =
-        Platform.OS === "web"
-          ? await fetch(uri).then((res) => res.text())
-          : await FileSystem.readAsStringAsync(uri);
-
-      const summary: Summary = summarizeCSV(csv);
+      const leaderboardEntry = {
+        name: filename,
+        totalWeight: summary.totalPounds,
+        timestamp: Date.now(),
+      };
+      
+      const existingData = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+      existingData.push(leaderboardEntry);
+      localStorage.setItem('leaderboard', JSON.stringify(existingData));
+      router.push({ pathname: '/leaderboard', params: { refresh: Date.now().toString() } });
 
       const slideData = [
         <StorySlide
@@ -145,7 +177,7 @@ export default function SummaryStoryScreen() {
     }
 
     loadData();
-  }, [uri]);
+  }, []);
 
   if (!slides.length) return null;
 

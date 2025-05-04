@@ -1,22 +1,49 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, Pressable, Platform, StyleSheet } from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { ThemedView } from '@/components/ThemedView';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function HomeScreen() {
   const [fileName, setFileName] = useState<string | null>(null);
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  
 
-  const handlePickFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: 'text/csv' });
-    if (!result.canceled) {
-      // push to /summary, passing the file URI
-      router.push({ pathname: '/summary', params: { uri: result.assets[0].uri } });
+  const handlePickFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const fileContent = reader.result as string;
+  
+        // 1. Store the file with a unique key
+        const fileKey = `csvData:${file.name}`;
+        localStorage.setItem(fileKey, fileContent);
+        setFileName(file.name);
+  
+        // 2. Maintain a list of stored filenames (the index)
+        const indexKey = 'csvFilesIndex';
+        const currentIndex = JSON.parse(localStorage.getItem(indexKey) || '[]');
+        
+        // Only add if it doesn't already exist
+        if (!currentIndex.includes(file.name)) {
+          const newIndex = [...currentIndex, file.name];
+          localStorage.setItem(indexKey, JSON.stringify(newIndex));
+        }
+  
+        // 3. Navigate to summary
+        router.push({ pathname: '/summary', params: { filename: file.name } });
+      };
+      reader.readAsText(file);
     }
   };
+  
 
   return (
     <ThemedView style={styles.container}>
@@ -53,6 +80,13 @@ export default function HomeScreen() {
             {fileName ? `📂 ${fileName}` : 'Click to Upload CSV'}
           </Text>
         </Pressable>
+        <input
+          type="file"
+          accept=".csv"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
       </Animatable.View>
     </ThemedView>
   );
