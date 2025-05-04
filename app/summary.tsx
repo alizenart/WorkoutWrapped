@@ -20,6 +20,12 @@ import * as Sharing from "expo-sharing";
 
 const { width, height } = Dimensions.get("window");
 
+type LeaderboardEntry = {
+  name: string;
+  totalWeight: number;
+  timestamp: number;
+};
+
 export default function SummaryStoryScreen() {
   const isWeb = Platform.OS === "web";
   const [csv, setCsv] = useState<string | null>(null);
@@ -68,10 +74,14 @@ export default function SummaryStoryScreen() {
         timestamp: Date.now(),
       };
       
-      const existingData = JSON.parse(localStorage.getItem('leaderboard') || '[]');
-      existingData.push(leaderboardEntry);
-      localStorage.setItem('leaderboard', JSON.stringify(existingData));
-      router.push({ pathname: '/leaderboard', params: { refresh: Date.now().toString() } });
+      const existingData: LeaderboardEntry[] = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+
+      // Avoid duplicates based on name
+      const alreadyExists = existingData.some(entry => entry.name === filename);
+      if (!alreadyExists) {
+        existingData.push(leaderboardEntry);
+        localStorage.setItem('leaderboard', JSON.stringify(existingData));
+      }
 
       const slideData = [
         <StorySlide
